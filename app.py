@@ -239,16 +239,16 @@ class DJClient():
 
 
 if __name__ == '__main__':
-    try:
-        logging.basicConfig(level=logging.DEBUG)
-        logging.getLogger('socketIO_client').setLevel(logging.WARNING)
-        logging.getLogger('requests').setLevel(logging.WARNING)
+    logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger('socketIO_client').setLevel(logging.WARNING)
+    logging.getLogger('requests').setLevel(logging.WARNING)
 
-        client = DJClient('localhost', 9867)
+    client = DJClient('localhost', 9867)
+
+    try:
         client.connect()
         client.join_room('lounge')
         client.wait()
-
     except KeyboardInterrupt:
         client.disconnect()
 
