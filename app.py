@@ -166,7 +166,7 @@ class DJClient():
         """
         Handle DJ event "kick", where we're kicked from the room.
         """
-        this._room_data = None
+        self._room_data = None
         if reason is not None:
             logging.info('Kicked from the room. Reason: %s' % reason)
         else:
