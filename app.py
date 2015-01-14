@@ -28,13 +28,14 @@ class DJClient():
         if not self.connected:
             raise self.NotConnectedException(message)
 
-    def __init__(self, host, port=80):
+    def __init__(self, host, port=80, play_audio=True):
         """
         Creates a new DJ client.
 
         Args:
             host: Hostname of DJ server.
             port: Port of DJ server.
+            play_audio: If True, will stream current room's audio to speakers.
         """
         # Host of DJ server
         self._host = host
@@ -279,19 +280,28 @@ class DJClient():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Play music from a DJ room.')
-    parser.add_argument('host', nargs=1, help='host help goes here')
+    parser.add_argument(
+            'host', nargs=1, help='Host of DJ server to connect to.')
     parser.add_argument(
             '-p', '--port', metavar='PORT', nargs='?', type=int, default=80,
-            help='port help goes here')
-    parser.add_argument('room', nargs=1, help='room help goes here')
+            help='Port of DJ server to connect to. (default: 80)')
+    parser.add_argument('room', nargs=1, help='Short name of room to to join.')
+    parser.add_argument(
+            '--no-audio', dest='play_audio', action='store_false',
+            help='Don\'t play audio from room.')
+    parser.set_defaults(play_audio=True)
+    parser.add_argument(
+            '--verbose', dest='verbose', action='store_true',
+            help='If set, debug messages will be printed to stdout.')
+    parser.set_defaults(verbose=False)
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
     logging.getLogger('socketIO_client').setLevel(logging.WARNING)
     logging.getLogger('requests').setLevel(logging.WARNING)
 
-    client = DJClient(args.host[0], args.port)
+    client = DJClient(args.host[0], args.port, play_audio=args.play_audio)
 
     try:
         client.connect()
