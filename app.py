@@ -197,21 +197,27 @@ class DJClient():
         """
         Handle DJ event "room:users" which is a list of all users in the room.
         """
-        logging.info(
-                'Users currently in the room: ' +
-                ', '.join(map(lambda user: user['fullName'], user_data)))
+        def format_username(user):
+            return '%s (%s)' % (user['fullName'], user['username'])
+
+        if len(user_data) > 0:
+            logging.info(
+                    'Users currently in the room: ' +
+                    ', '.join(map(format_username, user_data)))
 
     def _on_user_join(self, user_data):
         """
         Handle DJ event "room:user:join" where a user joined the room.
         """
-        logging.info('%s joined the room.' % user_data['fullName'])
+        logging.info('%s (%s) joined the room.' % (
+                user_data['fullName'], user_data['username']))
 
     def _on_user_leave(self, user_data):
         """
         Handle DJ event "room:user:leave" where a user left the room.
         """
-        logging.info('%s left the room.' % user_data['fullName'])
+        logging.info('%s (%s) left the room.' % (
+                user_data['fullName'], user_data['username']))
 
     def _on_song_update(self, song_data):
         """
