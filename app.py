@@ -20,6 +20,10 @@ class DJClient():
     def ensure_connected(self, message=None):
         """
         Raises a NotConnectedException if not connected.
+
+        Args:
+            message: Optional string to add as message for exception if not
+                     connected.
         """
         if not self.connected:
             raise self.NotConnectedException(message)
@@ -81,6 +85,9 @@ class DJClient():
     def join_room(self, shortname):
         """
         Requests to join a particular room.
+
+        Args:
+            shortname: Short name of room to try joining.
         """
         self.ensure_connected('You must be connected to join a room.')
         logging.debug('Joining room "%s"...' % shortname)
@@ -128,6 +135,12 @@ class DJClient():
         return cb_data[0]
 
     def wait(self, seconds=None):
+        """
+        Blocks, listens on websocket for an amount of seconds, or indefinitely.
+
+        Args:
+            seconds: Number of seconds to listen for, or indefinitely if None.
+        """
         if self._socket is None:
             raise Exception('No socket exists to wait on.')
 
@@ -161,12 +174,18 @@ class DJClient():
     def _on_error(self, err=None):
         """
         Called when the socket has an error.
+
+        Args:
+            err: Optional string of the error message the server is throwing.
         """
         logging.warning('Error: %s' % err)
 
     def _on_kick(self, reason=None):
         """
         Handle DJ event "kick", where we're kicked from the room.
+
+        Args:
+            reason: Optional string of the reason we got kicked.
         """
         self._room_data = None
         if reason is not None:
@@ -198,6 +217,9 @@ class DJClient():
     def _on_users(self, user_data):
         """
         Handle DJ event "room:users" which is a list of all users in the room.
+
+        Args:
+            user_data: List of dicts containing data for each user in the room.
         """
         def format_username(user):
             return '%s (%s)' % (user['fullName'], user['username'])
@@ -210,6 +232,9 @@ class DJClient():
     def _on_user_join(self, user_data):
         """
         Handle DJ event "room:user:join" where a user joined the room.
+
+        Args:
+            user_data: Dict containing data for user who just joined.
         """
         logging.info('%s (%s) joined the room.' % (
                 user_data['fullName'], user_data['username']))
@@ -217,6 +242,9 @@ class DJClient():
     def _on_user_leave(self, user_data):
         """
         Handle DJ event "room:user:leave" where a user left the room.
+
+        Args:
+            user_data: Dict containing data for user who just left.
         """
         logging.info('%s (%s) left the room.' % (
                 user_data['fullName'], user_data['username']))
@@ -224,6 +252,9 @@ class DJClient():
     def _on_song_update(self, song_data):
         """
         Handle DJ event "room:song:update" where a new song is playing.
+
+        Args:
+            song_data: Dict containing data for the song now playing.
         """
         dj = (('User ' + song_data['dj']['username']) if song_data['dj']
                 else 'The room')
