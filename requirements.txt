@@ -1,0 +1,2 @@
+socketIO-client==0.5.3
+mplayer.py==0.7.0

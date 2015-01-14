@@ -1,13 +1,21 @@
 import logging
 from socketIO_client import SocketIO
+import mplayer
 
 if __name__ == '__main__':
     import argparse
+
 
 class DJClient():
     class NotConnectedException(Exception):
         """
         Exception thrown when client is not connected.
+        """
+        pass
+
+    class NotInRoomException(Exception):
+        """
+        Exception thrown when client is not in a room.
         """
         pass
 
@@ -27,6 +35,18 @@ class DJClient():
         """
         if not self.connected:
             raise self.NotConnectedException(message)
+
+    def ensure_in_room(self, message=None):
+        """
+        Raises a NotInRoomException if not in a room. Also ensures connected.
+
+        Args:
+            message: Optional string to add as message for exception if not
+                     connected or in a room.
+        """
+        self.ensure_connected(message)
+        if not self.in_room:
+            raise self.NotInRoomException(message)
 
     def __init__(self, host, port=80, play_audio=True):
         """
@@ -52,6 +72,9 @@ class DJClient():
         # Latest received number of anonymous listeners.
         self._last_num_anonymous = 0
 
+        # mplayer object.
+        self._player = None
+
     def connect(self):
         """
         Initiates socket.io websocket connection.
@@ -63,7 +86,8 @@ class DJClient():
                     self._host, self._port, wait_for_connection=True)
 
         self._socket.on('connect', self._on_connect)
-        self._socket.on('disconnect', self._on_disconnect)
+        self._socket.on('disconnect', self._on_disconnect) # doesn't work; bug
+                                                           # in socketio lib.
         self._socket.on('error', self._on_error)
         self._socket.on('kick', self._on_kick)
         self._socket.on('room:num_anonymous', self._on_num_anonymous)
@@ -103,6 +127,7 @@ class DJClient():
         self.ensure_connected('You must be connected to leave a room.')
         self._emit('room:leave')
         self._room_data = None
+        self._stop_streaming()
 
     def _emit(self, event_name, params=None, ignore_error=False):
         """
@@ -158,6 +183,10 @@ class DJClient():
         """
         logging.info('Connected to DJ at %s:%d' % (self._host, self._port))
 
+        self._stop_streaming() # Stop any streaming, since on_disconnect
+                               # doesn't get called when it should due to a
+                               # socketIO-client bug.
+
         if self._room_data:
             shortname = self._room_data['shortname']
             logging.info('Rejoining last room...')
@@ -171,6 +200,7 @@ class DJClient():
                 self._host, self._port))
         self._last_num_anonymous = 0
         self._socket = None
+        self._stop_streaming()
 
     def _on_error(self, err=None):
         """
@@ -193,6 +223,7 @@ class DJClient():
             logging.info('Kicked from the room. Reason: %s' % reason)
         else:
             logging.info('Kicked from the room.')
+        self._stop_streaming()
 
     def _on_num_anonymous(self, num):
         """
@@ -262,12 +293,43 @@ class DJClient():
         logging.info(
                 '%s is currenly playing "%s" by %s' % (
                         dj, song_data['title'], song_data['artist']))
+
+        if song_data['playing']:
+            self._start_streaming(self.stream_url)
     
     def _on_song_stop(self):
         """
         Handle DJ event "room:song:stop" when a stop is stopped.
         """
         logging.info('No song is currently playing.')
+        self._stop_streaming()
+
+    def _start_streaming(self, url):
+        """
+        Starts streaming and playing audio from a URL.
+        
+        Args:
+            url: URL of audio stream to play from.
+        """
+        if self._player is not None:
+            self._stop_streaming()
+
+        logging.debug('Playing stream: %s' % url)
+
+        self._player = mplayer.Player(stderr=mplayer.STDOUT)
+        self._player.loadfile(url)
+
+    def _stop_streaming(self):
+        """
+        Stops streaming any audio.
+        """
+        if self._player is None:
+            return
+
+        logging.debug('Stopping stream.')
+
+        self._player.quit()
+        self._player = None
 
     @property
     def connected(self):
@@ -276,6 +338,18 @@ class DJClient():
     @property
     def in_room(self):
         return self.connected and (self._room_data is not None)
+
+    @property
+    def stream_url(self):
+        """
+        Gets the streaming URL for whatever the current song is.
+        
+        Returns:
+            String of the current song URL for streaming.
+        """
+        self.ensure_in_room()
+        return "http://%s:%d/stream/%s/current" % (
+                self._host, self._port, self._room_data['shortname'])
 
 
 if __name__ == '__main__':
