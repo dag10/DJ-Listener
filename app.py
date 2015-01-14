@@ -1,6 +1,8 @@
 import logging
 from socketIO_client import SocketIO
 
+if __name__ == '__main__':
+    import argparse
 
 class DJClient():
     class NotConnectedException(Exception):
@@ -245,15 +247,24 @@ class DJClient():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Play music from a DJ room.')
+    parser.add_argument('host', nargs=1, help='host help goes here')
+    parser.add_argument(
+            '-p', '--port', metavar='PORT', nargs='?', type=int, default=80,
+            help='port help goes here')
+    parser.add_argument('room', nargs=1, help='room help goes here')
+
+    args = parser.parse_args()
+
     logging.basicConfig(level=logging.DEBUG)
     logging.getLogger('socketIO_client').setLevel(logging.WARNING)
     logging.getLogger('requests').setLevel(logging.WARNING)
 
-    client = DJClient('localhost', 9867)
+    client = DJClient(args.host[0], args.port)
 
     try:
         client.connect()
-        client.join_room('lounge')
+        client.join_room(args.room[0])
         client.wait()
     except KeyboardInterrupt:
         client.disconnect()
