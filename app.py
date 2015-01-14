@@ -89,6 +89,9 @@ class DJClient():
         # mplayer object.
         self._player = None
 
+        # Whether we should play audio.
+        self._play_audio = play_audio
+
     def connect(self):
         """
         Initiates socket.io websocket connection.
@@ -333,6 +336,9 @@ class DJClient():
         Args:
             url: URL of audio stream to play from.
         """
+        if not self._play_audio:
+            return
+
         if self._player is not None:
             self._stop_streaming()
 
