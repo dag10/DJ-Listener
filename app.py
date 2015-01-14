@@ -6,6 +6,20 @@ if __name__ == '__main__':
     import argparse
 
 
+def seconds_to_song_timestamp(seconds):
+    """
+    Converts a number of seconds into mm:ss string format.
+    
+    Args:
+        seconds: Number of seconds.
+
+    Returns:
+        String with mm:ss format.
+    """
+    seconds = int(seconds)
+    return '%d:%02d' % (seconds / 60, seconds % 60)
+
+
 class DJClient():
     class NotConnectedException(Exception):
         """
@@ -290,9 +304,17 @@ class DJClient():
         """
         dj = (('User ' + song_data['dj']['username']) if song_data['dj']
                 else 'The room')
+        starting_at_msg = ''
+        elapsed = song_data['elapsed'] / 1000.0
+        if elapsed > 1:
+            starting_at_msg = (' starting from %s' %
+                    seconds_to_song_timestamp(elapsed))
+        verb = 'started' if elapsed < 1 else 'is currently'
         logging.info(
-                '%s is currenly playing "%s" by %s' % (
-                        dj, song_data['title'], song_data['artist']))
+                '%s %s playing "%s" by %s (length: %s)%s' % (
+                        dj, verb, song_data['title'], song_data['artist'],
+                        seconds_to_song_timestamp(song_data['duration']),
+                        starting_at_msg))
 
         if song_data['playing']:
             self._start_streaming(self.stream_url)
