@@ -62,7 +62,7 @@ class DJClient():
         if not self.in_room:
             raise self.NotInRoomException(message)
 
-    def __init__(self, host, port=80, play_audio=True):
+    def __init__(self, host, port=80, play_audio=True, alsa_device=None):
         """
         Creates a new DJ client.
 
@@ -70,6 +70,7 @@ class DJClient():
             host: Hostname of DJ server.
             port: Port of DJ server.
             play_audio: If True, will stream current room's audio to speakers.
+            alsa_device: Optional string of ALSA device to pass to mplayer.
         """
         # Host of DJ server
         self._host = host
@@ -91,6 +92,9 @@ class DJClient():
 
         # Whether we should play audio.
         self._play_audio = play_audio
+
+        # ALSA device.
+        self._alsa_device = alsa_device
 
     def connect(self):
         """
@@ -135,7 +139,7 @@ class DJClient():
         logging.debug('Joining room "%s"...' % shortname)
         self._room_data = self._emit('room:join', shortname)
         self._room_data['shortname'] = shortname
-        logging.info('Joined room "%s"' % self._room_data['name'])
+        logging.info('Joined room "%s"' % self._room_data['name'].strip())
 
     def leave_room(self):
         """
@@ -226,7 +230,7 @@ class DJClient():
         Args:
             err: Optional string of the error message the server is throwing.
         """
-        logging.warning('Error: %s' % err)
+        logging.warning('Error: %s' % err.strip())
 
     def _on_kick(self, reason=None):
         """
@@ -271,7 +275,8 @@ class DJClient():
             user_data: List of dicts containing data for each user in the room.
         """
         def format_username(user):
-            return '%s (%s)' % (user['fullName'], user['username'])
+            return '%s (%s)' % (
+                    user['fullName'].strip(), user['username'].strip())
 
         if len(user_data) > 0:
             logging.info(
@@ -286,7 +291,7 @@ class DJClient():
             user_data: Dict containing data for user who just joined.
         """
         logging.info('%s (%s) joined the room.' % (
-                user_data['fullName'], user_data['username']))
+                user_data['fullName'].strip(), user_data['username'].strip()))
 
     def _on_user_leave(self, user_data):
         """
@@ -296,7 +301,7 @@ class DJClient():
             user_data: Dict containing data for user who just left.
         """
         logging.info('%s (%s) left the room.' % (
-                user_data['fullName'], user_data['username']))
+                user_data['fullName'].strip(), user_data['username'].strip()))
 
     def _on_song_update(self, song_data):
         """
@@ -305,8 +310,8 @@ class DJClient():
         Args:
             song_data: Dict containing data for the song now playing.
         """
-        dj = (('User ' + song_data['dj']['username']) if song_data['dj']
-                else 'The room')
+        dj = (('User ' + song_data['dj']['username'].strip())
+                if song_data['dj'] else 'The room')
         starting_at_msg = ''
         elapsed = song_data['elapsed'] / 1000.0
         if elapsed > 1:
@@ -315,7 +320,8 @@ class DJClient():
         verb = 'started' if elapsed < 1 else 'is currently'
         logging.info(
                 '%s %s playing "%s" by %s (length: %s)%s' % (
-                        dj, verb, song_data['title'], song_data['artist'],
+                        dj, verb, song_data['title'].strip(),
+                        song_data['artist'].strip(),
                         seconds_to_song_timestamp(song_data['duration']),
                         starting_at_msg))
 
@@ -344,7 +350,13 @@ class DJClient():
 
         logging.debug('Playing stream: %s' % url)
 
-        self._player = mplayer.Player(stderr=mplayer.STDOUT)
+        mplayer_args = ()
+        if self._alsa_device is not None:
+            mplayer_args = ('-ao', 'alsa:device=%s' % self._alsa_device)
+
+        logging.debug('Args for mplayer: ' + str(mplayer_args))
+
+        self._player = mplayer.Player(args=mplayer_args, stderr=mplayer.STDOUT)
         self._player.loadfile(url)
 
     def _stop_streaming(self):
@@ -396,6 +408,9 @@ if __name__ == '__main__':
             '--verbose', dest='verbose', action='store_true',
             help='If set, debug messages will be printed to stdout.')
     parser.set_defaults(verbose=False)
+    parser.add_argument(
+            '-d', '--alsa-device', metavar='DEVICE', nargs='?',
+            help='ALSA device string. (example: "hw=1.0")')
 
     args = parser.parse_args()
 
@@ -403,7 +418,9 @@ if __name__ == '__main__':
     logging.getLogger('socketIO_client').setLevel(logging.WARNING)
     logging.getLogger('requests').setLevel(logging.WARNING)
 
-    client = DJClient(args.host[0], args.port, play_audio=args.play_audio)
+    client = DJClient(
+            args.host[0], args.port, play_audio=args.play_audio,
+            alsa_device=args.alsa_device)
 
     try:
         client.connect()

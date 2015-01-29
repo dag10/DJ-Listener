@@ -15,7 +15,8 @@ You must also install `mplayer` using your system's package manager.
 Launching
 ---
 ```
-usage: app.py [-h] [-p [PORT]] [--no-audio] [--verbose] host room
+usage: app.py [-h] [-p [PORT]] [--no-audio] [--verbose] [-d [DEVICE]]
+              host room
 
 Play music from a DJ room.
 
@@ -29,6 +30,8 @@ optional arguments:
                         Port of DJ server to connect to. (default: 80)
   --no-audio            Don't play audio from room.
   --verbose             If set, debug messages will be printed to stdout.
+  -d [DEVICE], --alsa-device [DEVICE]
+                        ALSA device string. (example: "hw=1.0")
 ```
 
 Example Output
