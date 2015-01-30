@@ -230,7 +230,7 @@ class DJClient():
         Args:
             err: Optional string of the error message the server is throwing.
         """
-        logging.warning('Error: %s' % err.strip())
+        logging.warning('Error: %s' % err.strip() if err else None)
 
     def _on_kick(self, reason=None):
         """
@@ -310,6 +310,15 @@ class DJClient():
         Args:
             song_data: Dict containing data for the song now playing.
         """
+        if song_data['title'] is not None:
+            song_data['title'] = song_data['title'].strip()
+
+        if song_data['artist'] is not None:
+            song_data['artist'] = song_data['artist'].strip()
+
+        if song_data['album'] is not None:
+            song_data['album'] = song_data['album'].strip()
+
         dj = (('User ' + song_data['dj']['username'].strip())
                 if song_data['dj'] else 'The room')
         starting_at_msg = ''
@@ -320,8 +329,8 @@ class DJClient():
         verb = 'started' if elapsed < 1 else 'is currently'
         logging.info(
                 '%s %s playing "%s" by %s (length: %s)%s' % (
-                        dj, verb, song_data['title'].strip(),
-                        song_data['artist'].strip(),
+                        dj, verb, song_data['title'],
+                        song_data['artist'],
                         seconds_to_song_timestamp(song_data['duration']),
                         starting_at_msg))
 
