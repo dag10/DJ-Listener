@@ -20,6 +20,8 @@ usage: app.py [-h] [-p [PORT]] [--no-audio] [--verbose] [-d [DEVICE]]
 
 Play music from a DJ room.
 
+To connect via SSL, prefix the host with https:// and specify port 443.
+
 positional arguments:
   host                  Host of DJ server to connect to.
   room                  Short name of room to to join.

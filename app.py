@@ -402,7 +402,12 @@ class DJClient():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Play music from a DJ room.')
+    parser = argparse.ArgumentParser(
+            description=('Play music from a DJ room.\n'
+                         '\n'
+                         'To connect via SSL, prefix the host with https:// '
+                         'and specify port 443.'),
+            formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(
             'host', nargs=1, help='Host of DJ server to connect to.')
     parser.add_argument(
