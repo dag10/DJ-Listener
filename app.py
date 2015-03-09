@@ -1,6 +1,7 @@
 import logging
 from socketIO_client import SocketIO
 import mplayer
+from time import sleep
 
 if __name__ == '__main__':
     import argparse
@@ -62,7 +63,9 @@ class DJClient():
         if not self.in_room:
             raise self.NotInRoomException(message)
 
-    def __init__(self, host, port=80, play_audio=True, alsa_device=None):
+    def __init__(
+            self, host, port=80, play_audio=True, alsa_device=None,
+            verify_ssl=True):
         """
         Creates a new DJ client.
 
@@ -71,6 +74,7 @@ class DJClient():
             port: Port of DJ server.
             play_audio: If True, will stream current room's audio to speakers.
             alsa_device: Optional string of ALSA device to pass to mplayer.
+            verify_ssl: If True, SocketIO will verify SSL certs.
         """
         # Host of DJ server
         self._host = host
@@ -96,6 +100,11 @@ class DJClient():
         # ALSA device.
         self._alsa_device = alsa_device
 
+        # SSL Cert verifications.
+        self._verify_ssl = verify_ssl
+
+        logging.debug('Created DJClient for %s:%d' % (self._host, self._port))
+
     def connect(self):
         """
         Initiates socket.io websocket connection.
@@ -103,8 +112,14 @@ class DJClient():
         if self.connected:
             self.disconnect()
 
-        self._socket = SocketIO(
-                    self._host, self._port, wait_for_connection=True)
+        try:
+            self._socket = SocketIO(
+                        self._host, self._port, verify=self._verify_ssl,
+                        wait_for_connection=True)
+        except UnicodeDecodeError, e:
+            logging.error('UnicodeDecodeError. Trying again in 2 seconds...')
+            sleep(2)
+            self.connect()
 
         self._socket.on('connect', self._on_connect)
         self._socket.on('disconnect', self._on_disconnect) # doesn't work; bug
@@ -425,6 +440,10 @@ if __name__ == '__main__':
     parser.add_argument(
             '-d', '--alsa-device', metavar='DEVICE', nargs='?',
             help='ALSA device string. (example: "hw=1.0")')
+    parser.set_defaults(verify=True)
+    parser.add_argument(
+            '--no-verify', dest='verify', action='store_false',
+            help='If set, SSL cert verification will be disabled.')
 
     args = parser.parse_args()
 
@@ -434,7 +453,7 @@ if __name__ == '__main__':
 
     client = DJClient(
             args.host[0], args.port, play_audio=args.play_audio,
-            alsa_device=args.alsa_device)
+            alsa_device=args.alsa_device, verify_ssl=args.verify)
 
     try:
         client.connect()

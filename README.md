@@ -16,6 +16,7 @@ Launching
 ---
 ```
 usage: app.py [-h] [-p [PORT]] [--no-audio] [--verbose] [-d [DEVICE]]
+              [--no-verify]
               host room
 
 Play music from a DJ room.
@@ -34,6 +35,7 @@ optional arguments:
   --verbose             If set, debug messages will be printed to stdout.
   -d [DEVICE], --alsa-device [DEVICE]
                         ALSA device string. (example: "hw=1.0")
+  --no-verify           If set, SSL cert verification will be disabled.
 ```
 
 Example Output
