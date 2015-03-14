@@ -412,8 +412,9 @@ class DJClient():
             String of the current song URL for streaming.
         """
         self.ensure_in_room()
+        host = self._host.replace('https://', '').replace('http://', '')
         return "http://%s:%d/stream/%s/current" % (
-                self._host, self._port, self._room_data['shortname'])
+                host, self._port, self._room_data['shortname'])
 
 
 if __name__ == '__main__':
